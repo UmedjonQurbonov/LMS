@@ -96,3 +96,47 @@ class ReviewResponseSchema(BaseModel):
 
 class MessageSchema(BaseModel):
     detail: str
+
+
+class LessonCreateSchema(BaseModel):
+    subject_id: int
+    title: str
+    description: str | None = None
+
+class LessonResponseSchema(BaseModel):
+    id: int
+    title: str
+    description: str | None
+
+    class Config:
+        from_attributes = True
+
+
+class QuestionCreateSchema(BaseModel):
+    lesson_id: int
+    text: str
+    type: str = "single"
+
+class QuestionResponseSchema(BaseModel):
+    id: int
+    text: str
+    type: str
+
+    class Config:
+        from_attributes = True
+
+
+
+class AnswerCreateSchema(BaseModel):
+    question_id: int
+    text: str
+    is_correct: bool = False
+
+class AnswerResponseSchema(BaseModel):
+    id: int
+    text: str
+    is_correct: bool
+
+    class Config:
+        from_attributes = True
+

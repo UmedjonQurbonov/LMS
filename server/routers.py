@@ -10,7 +10,11 @@ app.include_router(subject_router)
 app.include_router(schedule_router)
 app.include_router(booking_router)
 app.include_router(payment_router)
+app.include_router(lesson_router)
+app.include_router(question_router)
+app.include_router(answer_router)
 app.include_router(review_router)
 app.include_router(parent_router)
 app.include_router(utils_router)
+
 

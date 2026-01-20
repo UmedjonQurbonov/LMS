@@ -272,3 +272,86 @@ utils_router = APIRouter(tags=["Utils"])
 def health_check():
     return {"status": "ok"}
 
+
+lesson_router = APIRouter(prefix="/lessons", tags=["Lessons"])
+
+
+@lesson_router.post("", response_model=LessonResponseSchema)
+def create_lesson(
+    data: LessonCreateSchema,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    lesson = Lesson(
+        subject_id=data.subject_id,
+        title=data.title,
+        description=data.description,
+    )
+    db.add(lesson)
+    db.commit()
+    db.refresh(lesson)
+    return lesson
+
+@lesson_router.get("/{lesson_id}", response_model=LessonResponseSchema)
+def get_lesson(lesson_id: int, db: Session = Depends(get_db)):
+    lesson = db.query(Lesson).filter_by(id=lesson_id).first()
+    if not lesson:
+        raise HTTPException(404, "Lesson not found")
+    return lesson
+
+@lesson_router.get("/subject/{subject_id}", response_model=List[LessonResponseSchema])
+def subject_lessons(subject_id: int, db: Session = Depends(get_db)):
+    return db.query(Lesson).filter_by(subject_id=subject_id).all()
+
+
+question_router = APIRouter(prefix="/questions", tags=["Questions"])
+
+
+@question_router.post("", response_model=QuestionResponseSchema)
+def create_question(
+    data: QuestionCreateSchema,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    question = Question(
+        lesson_id=data.lesson_id,
+        text=data.text,
+        type=data.type,
+    )
+    db.add(question)
+    db.commit()
+    db.refresh(question)
+    return question
+
+
+@question_router.get("/lesson/{lesson_id}", response_model=List[QuestionResponseSchema])
+def lesson_questions(lesson_id: int, db: Session = Depends(get_db)):
+    return db.query(Question).filter_by(lesson_id=lesson_id).all()
+
+
+
+answer_router = APIRouter(prefix="/answers", tags=["Answers"])
+
+
+@answer_router.post("", response_model=AnswerResponseSchema)
+def create_answer(
+    data: AnswerCreateSchema,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    answer = Answer(
+        question_id=data.question_id,
+        text=data.text,
+        is_correct=data.is_correct,
+    )
+    db.add(answer)
+    db.commit()
+    db.refresh(answer)
+    return answer
+
+
+@answer_router.get("/question/{question_id}", response_model=List[AnswerResponseSchema])
+def question_answers(question_id: int, db: Session = Depends(get_db)):
+    return db.query(Answer).filter_by(question_id=question_id).all()
+
+

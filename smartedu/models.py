@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, ForeignKey, Text, Integer, String, ForeignKey, false
+from sqlalchemy import String, Integer, ForeignKey, Text, Integer, String, ForeignKey, false, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from server.models import BaseModel
 from accounts.models import User
@@ -99,3 +99,41 @@ class Review(BaseModel):
 
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     comment: Mapped[str] = mapped_column(Text)
+
+
+
+class Lesson(BaseModel):
+    __tablename__ = "lessons"
+
+    id = mapped_column(Integer, primary_key=True)
+    subject_id = mapped_column(ForeignKey("subjects.id"))
+    title = mapped_column(String(255))
+    description = mapped_column(String, nullable=True)
+
+    subject = relationship("Subject", back_populates="lessons")
+    questions = relationship("Question", back_populates="lesson")
+
+
+class Question(BaseModel):
+    __tablename__ = "questions"
+
+    id = mapped_column(Integer, primary_key=True)
+    lesson_id = mapped_column(ForeignKey("lessons.id"))
+    text = mapped_column(String)
+    type = mapped_column(String, default="single")
+
+    lesson = relationship("Lesson", back_populates="questions")
+    answers = relationship("Answer", back_populates="question")
+
+
+class Answer(BaseModel):
+    __tablename__ = "answers"
+
+    id = mapped_column(Integer, primary_key=True)
+    question_id = mapped_column(ForeignKey("questions.id"))
+    text = mapped_column(String)
+    is_correct = mapped_column(Boolean, default=False)
+
+    question = relationship("Question", back_populates="answers")
+
+
