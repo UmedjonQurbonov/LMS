@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from typing import List, Optional
 from server.settings import get_db
 from .models import *
 from accounts.models import User
 from .schemas import *
 from accounts.permissions import get_current_user
-from typing import List
 
 
 teacher_router = APIRouter(prefix="/teachers", tags=["Teachers"])
@@ -21,6 +21,7 @@ def create_teacher_profile(
     db.commit()
     db.refresh(profile)
     return profile
+
 
 @teacher_router.get("/profile/me", response_model=TeacherProfileResponseSchema)
 def get_my_teacher_profile(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
@@ -66,12 +67,16 @@ def assign_subject_to_teacher(
     db.commit()
     return {"status": "subject assigned"}
 
-@teacher_router.get("", response_model=List[TeacherProfileResponseSchema])
+
+@teacher_router.get("", response_model=TeacherProfileListSchema)
 def search_teachers(
-    subject: int = Query(None),
-    min_price: int = Query(None),
-    max_price: int = Query(None),
-    rating: int = Query(None),
+    subject: Optional[int] = Query(None),
+    min_price: Optional[int] = Query(None),
+    max_price: Optional[int] = Query(None),
+    rating: Optional[int] = Query(None),
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
     query = db.query(TeacherProfile)
@@ -83,7 +88,14 @@ def search_teachers(
         query = query.filter(TeacherProfile.rating >= rating)
     if subject is not None:
         query = query.join(TeacherSubject).filter(TeacherSubject.subject_id == subject)
-    return query.all()
+    if search:
+        query = query.filter(
+            TeacherProfile.description.ilike(f"%{search}%") |
+            TeacherProfile.user.has(User.username.ilike(f"%{search}%"))
+        )
+    total = query.count()
+    items = query.offset(offset).limit(limit).all()
+    return {"total": total, "items": items}
 
 
 @teacher_router.get("/slots/{teacher_id}", response_model=List[ScheduleSlotResponseSchema])
@@ -265,7 +277,6 @@ def child_reviews(student_id: int, db: Session = Depends(get_db), user: User = D
         raise HTTPException(status_code=404, detail="Student not found")
     return db.query(Review).filter_by(student_id=student_id).all()
 
-
 utils_router = APIRouter(tags=["Utils"])
 
 @utils_router.get("/health")
@@ -274,19 +285,13 @@ def health_check():
 
 
 lesson_router = APIRouter(prefix="/lessons", tags=["Lessons"])
+question_router = APIRouter(prefix="/questions", tags=["Questions"])
+answer_router = APIRouter(prefix="/answers", tags=["Answers"])
 
 
 @lesson_router.post("", response_model=LessonResponseSchema)
-def create_lesson(
-    data: LessonCreateSchema,
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    lesson = Lesson(
-        subject_id=data.subject_id,
-        title=data.title,
-        description=data.description,
-    )
+def create_lesson(data: LessonCreateSchema, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    lesson = Lesson(subject_id=data.subject_id, title=data.title, description=data.description)
     db.add(lesson)
     db.commit()
     db.refresh(lesson)
@@ -296,54 +301,29 @@ def create_lesson(
 def get_lesson(lesson_id: int, db: Session = Depends(get_db)):
     lesson = db.query(Lesson).filter_by(id=lesson_id).first()
     if not lesson:
-        raise HTTPException(404, "Lesson not found")
+        raise HTTPException(status_code=404, detail="Lesson not found")
     return lesson
 
 @lesson_router.get("/subject/{subject_id}", response_model=List[LessonResponseSchema])
 def subject_lessons(subject_id: int, db: Session = Depends(get_db)):
     return db.query(Lesson).filter_by(subject_id=subject_id).all()
 
-
-question_router = APIRouter(prefix="/questions", tags=["Questions"])
-
-
 @question_router.post("", response_model=QuestionResponseSchema)
-def create_question(
-    data: QuestionCreateSchema,
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    question = Question(
-        lesson_id=data.lesson_id,
-        text=data.text,
-        type=data.type,
-    )
+def create_question(data: QuestionCreateSchema, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    question = Question(lesson_id=data.lesson_id, text=data.text, type=data.type)
     db.add(question)
     db.commit()
     db.refresh(question)
     return question
-
 
 @question_router.get("/lesson/{lesson_id}", response_model=List[QuestionResponseSchema])
 def lesson_questions(lesson_id: int, db: Session = Depends(get_db)):
     return db.query(Question).filter_by(lesson_id=lesson_id).all()
 
 
-
-answer_router = APIRouter(prefix="/answers", tags=["Answers"])
-
-
 @answer_router.post("", response_model=AnswerResponseSchema)
-def create_answer(
-    data: AnswerCreateSchema,
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    answer = Answer(
-        question_id=data.question_id,
-        text=data.text,
-        is_correct=data.is_correct,
-    )
+def create_answer(data: AnswerCreateSchema, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    answer = Answer(question_id=data.question_id, text=data.text, is_correct=data.is_correct)
     db.add(answer)
     db.commit()
     db.refresh(answer)
@@ -353,5 +333,4 @@ def create_answer(
 @answer_router.get("/question/{question_id}", response_model=List[AnswerResponseSchema])
 def question_answers(question_id: int, db: Session = Depends(get_db)):
     return db.query(Answer).filter_by(question_id=question_id).all()
-
 

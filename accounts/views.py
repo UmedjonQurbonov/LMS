@@ -42,7 +42,7 @@ async def register_api_view(data:LoginSchema, db:Session=Depends(get_db)):
     
     return {
         "refresh":create_refresh_token(user.username, user.id),
-        "access":create_access_token(user.username, user.id)
+        "access_tocken":create_access_token(user.username, user.id)
     }
 
 

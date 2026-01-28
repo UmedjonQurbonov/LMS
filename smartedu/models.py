@@ -35,6 +35,8 @@ class Subject(BaseModel):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
 
+    lessons: Mapped[list["Lesson"]] = relationship("Lesson", back_populates="subject")
+
 class TeacherSubject(BaseModel):
     __tablename__ = "teacher_subjects"
 
