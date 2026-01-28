@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional
+from typing import List
 
 class TeacherProfileCreateSchema(BaseModel):
     description: Optional[str] = Field(None, max_length=1000)
@@ -18,6 +19,10 @@ class TeacherProfileResponseSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+class TeacherProfileListSchema(BaseModel):
+    total: int
+    items: List[TeacherProfileResponseSchema]
 
 class StudentProfileCreateSchema(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=100)
