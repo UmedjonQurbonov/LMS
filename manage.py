@@ -1,7 +1,5 @@
-import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI
 from accounts.views import auth
 from smartedu.views import *
 from chats.views import *
@@ -23,16 +21,17 @@ app.include_router(parent_router)
 app.include_router(utils_router)
 app.include_router(chat_router)
 app.include_router(group_router)
-app.include_router(chat_router)
 
 
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://student1.softclub.tj",
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",    
-        "http://127.0.0.1:8513",
-    ],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -44,7 +43,6 @@ def health_check():
 
 
 
-
-if __name__ == '__main__':
-    uvicorn.run('server.routers:app', port=8513, host="0.0.0.0" , reload=True)
+# if __name__ == '__main__':
+#     uvicorn.run('server.routers:app', port=8000, host='localhost', reload=True)
 
