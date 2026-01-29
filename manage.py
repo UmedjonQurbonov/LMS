@@ -22,6 +22,7 @@ app.include_router(utils_router)
 app.include_router(chat_router)
 app.include_router(group_router)
 
+
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -39,6 +40,7 @@ app.add_middleware(
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
 
 
 # if __name__ == '__main__':

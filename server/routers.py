@@ -4,6 +4,7 @@ from smartedu.views import *
 from chats.views import *
 
 app = FastAPI()
+
 app.include_router(auth, prefix='/auth', tags=['accounts'])
 app.include_router(teacher_router)
 app.include_router(student_router)
